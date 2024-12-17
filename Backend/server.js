@@ -13,16 +13,18 @@ app.use(express.json());
 app.use(cors());
 
 // API Routes
-
 app.use("/routes/points", pointsRoutes);
 app.use("/api/polygons", polygonsRoutes);
 
 // Serve React frontend
 app.use(express.static(path.join(__dirname, "../build")));
 
-app.get("*", (req, res) => {
+// Serve React frontend for non-API routes
+app.get("*", (req, res, next) => {
+  if (req.path.startsWith("/api")) return next(); 
   res.sendFile(path.join(__dirname, "../build", "index.html"));
 });
+
 
 // Start server
 app.listen(PORT, () => {

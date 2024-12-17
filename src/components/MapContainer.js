@@ -8,37 +8,33 @@ const MapContainer = () => {
     const [polygons, setPolygons] = useState([]);
     const [selectedFeature, setSelectedFeature] = useState(null);
 
-    // useEffect(() => {  
-    //     // Fetch Point Data  
-    //     axios.get('/points.json').then((response) => setPoints(response.data));  
-      
-    //     // Fetch Polygon Data  
-    //     axios.get('/polygons.json').then((response) => setPolygons(response.data));  
-    //   }, []);  
+    useEffect(() => {
+        // Fetch Point Data  
+        axios.get('/points.json')
+            .then((response) => setPoints(response.data))
+            .catch((error) => console.error('Error fetching points data:', error));
+
+        // Fetch Polygon Data  
+        axios.get('/api/polygons/all')
+            .then(response => setPolygons(response.data))
+            .catch(error => console.error('Error fetching polygons data:', error));
+    }, []);
 
     useEffect(() => {
-      const fetchData = async () => {
-        try {
-          // Fetch both points and polygons in parallel
-          const [pointsResponse, polygonsResponse] = await Promise.all([
-            axios.get('/points.json'),
-            axios.get('/api/polygons/all'),
-          ]);
-    
-          // Set the data
-          setPoints(pointsResponse.data);
-          setPolygons(polygonsResponse.data);
-    
-          console.log('Points Data:', pointsResponse.data);
-          console.log('Polygons Data:', polygonsResponse.data);
-        } catch (error) {
-          console.error('Error fetching data:', error);
-        }
-      };
-    
-      fetchData();
+        const fetchData = async () => {
+            try {
+                const [pointsResponse, polygonsResponse] = await Promise.all([
+                    axios.get('http://localhost:5000/points.json'),
+                    axios.get('http://localhost:5000    /api/polygons/all'),
+                ]);
+                setPoints(pointsResponse.data);
+                setPolygons(polygonsResponse.data || []);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        };
+        fetchData();
     }, []);
-    
 
     const handleMarkerClick = (point) => {
         setSelectedFeature(point);
@@ -50,7 +46,7 @@ const MapContainer = () => {
 
     return (
         <div>
-            <LeafletMap center={[51.505, -0.09]} zoom={13} style={{ height: '800px', width: '100%' }}>
+            <LeafletMap center={[51.505, -0.09]} zoom={11} style={{ height: '800px', width: '100%' }}>
                 <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     attribution="&copy; <a href='http://osm.org/copyright'>OpenStreetMap</a> contributors"
@@ -67,19 +63,22 @@ const MapContainer = () => {
                 {polygons.map((polygon) => (
                     <Polygon
                         key={polygon.id}
-                        positions={polygon.coordinates}
+                        positions={polygon.geometry.coordinates.map(coord => [coord[1], coord[0]])} // In Leaflet, coordinates are [latitude, longitude]
                         eventHandlers={{ click: () => handlePolygonClick(polygon) }}
                     />
                 ))}
             </LeafletMap>
             {selectedFeature && (
                 <div className="feature-info">
-                    { <h3>Feature Info</h3> }           
-                    { <pre>{JSON.stringify(selectedFeature, null, 2)}</pre> }
+                    <h3>Feature Info</h3>
+                    <pre>{JSON.stringify(selectedFeature, null, 2)}</pre>
                 </div>
             )}
         </div>
     );
 };
 
-export default MapContainer;  
+export default MapContainer;
+
+
+
